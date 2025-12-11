@@ -89,7 +89,9 @@ export function SignUser({
                   >
                     <Coins />
                     {t('credits_title', {
-                      credits: user.credits?.remainingCredits || 0,
+                      credits: user.credits?.isUnlimited
+                        ? '∞'
+                        : user.credits?.remainingCredits || 0,
                     })}
                   </Link>
                 </DropdownMenuItem>

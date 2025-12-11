@@ -3,7 +3,7 @@ import { AIMediaType } from '@/extensions/ai';
 import { getUuid } from '@/shared/lib/hash';
 import { respData, respErr } from '@/shared/lib/resp';
 import { createAITask, NewAITask } from '@/shared/models/ai_task';
-import { getRemainingCredits } from '@/shared/models/credit';
+import { getUserCreditsSummary } from '@/shared/models/credit';
 import { getUserInfo } from '@/shared/models/user';
 import { getAIService } from '@/shared/services/ai';
 
@@ -71,8 +71,8 @@ export async function POST(request: Request) {
     }
 
     // check credits
-    const remainingCredits = await getRemainingCredits(user.id);
-    if (remainingCredits < costCredits) {
+    const summary = await getUserCreditsSummary(user.id);
+    if (!summary.isUnlimited && summary.remainingCredits < costCredits) {
       throw new Error('insufficient credits');
     }
 
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     }
 
     // create ai task
-    const newAITask: NewAITask = {
+    const newAITask: NewAITask & { isUnlimited?: boolean } = {
       id: getUuid(),
       userId: user.id,
       mediaType,
@@ -109,6 +109,7 @@ export async function POST(request: Request) {
       taskId: result.taskId,
       taskInfo: result.taskInfo ? JSON.stringify(result.taskInfo) : null,
       taskResult: result.taskResult ? JSON.stringify(result.taskResult) : null,
+      isUnlimited: summary.isUnlimited,
     };
     await createAITask(newAITask);
 

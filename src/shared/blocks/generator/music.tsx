@@ -250,7 +250,10 @@ export function MusicGenerator({ className, srOnlyTitle }: SongGeneratorProps) {
       return;
     }
 
-    if (!user.credits || user.credits.remainingCredits < costCredits) {
+    if (
+      !user.credits?.isUnlimited &&
+      (!user.credits || user.credits.remainingCredits < costCredits)
+    ) {
       toast.error('Insufficient credits');
       return;
     }
@@ -602,15 +605,17 @@ export function MusicGenerator({ className, srOnlyTitle }: SongGeneratorProps) {
                   </div>
                 ) : user &&
                   user.credits &&
-                  user.credits.remainingCredits > 0 ? (
+                  (user.credits.isUnlimited || user.credits.remainingCredits > 0) ? (
                   <div className="mb-6 flex items-center justify-between text-sm">
                     <span className="text-primary">
                       {t('generator.credits_cost', { credits: costCredits })}
                     </span>
                     <span className="text-foreground font-medium">
-                      {t('generator.credits_remaining', {
-                        credits: user.credits.remainingCredits,
-                      })}
+                      {user.credits.isUnlimited
+                        ? 'Unlimited'
+                        : t('generator.credits_remaining', {
+                            credits: user.credits.remainingCredits,
+                          })}
                     </span>
                   </div>
                 ) : (

@@ -481,7 +481,7 @@ export function VideoGenerator({
       return;
     }
 
-    if (remainingCredits < costCredits) {
+    if (!user.credits?.isUnlimited && remainingCredits < costCredits) {
       toast.error('Insufficient credits. Please top up to keep creating.');
       return;
     }
@@ -797,13 +797,15 @@ export function VideoGenerator({
                     </span>
                     <span>{t('credits_remaining', { credits: 0 })}</span>
                   </div>
-                ) : user && remainingCredits > 0 ? (
+                ) : user && (user.credits?.isUnlimited || remainingCredits > 0) ? (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-primary">
                       {t('credits_cost', { credits: costCredits })}
                     </span>
                     <span>
-                      {t('credits_remaining', { credits: remainingCredits })}
+                      {user.credits?.isUnlimited
+                        ? 'Unlimited'
+                        : t('credits_remaining', { credits: remainingCredits })}
                     </span>
                   </div>
                 ) : (

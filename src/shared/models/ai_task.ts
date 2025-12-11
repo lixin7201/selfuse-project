@@ -13,7 +13,8 @@ export type AITask = typeof aiTask.$inferSelect & {
 export type NewAITask = typeof aiTask.$inferInsert;
 export type UpdateAITask = Partial<Omit<NewAITask, 'id' | 'createdAt'>>;
 
-export async function createAITask(newAITask: NewAITask) {
+export async function createAITask(taskData: NewAITask & { isUnlimited?: boolean }) {
+  const { isUnlimited, ...newAITask } = taskData;
   const result = await db().transaction(async (tx) => {
     // 1. create task record
     const [taskResult] = await tx.insert(aiTask).values(newAITask).returning();
@@ -31,6 +32,7 @@ export async function createAITask(newAITask: NewAITask) {
           taskId: taskResult.id,
         }),
         tx,
+        skipDeduct: isUnlimited,
       });
 
       // 3. update task record with consumed credit id

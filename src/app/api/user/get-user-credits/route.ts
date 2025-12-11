@@ -1,5 +1,5 @@
 import { respData, respErr } from '@/shared/lib/resp';
-import { getRemainingCredits } from '@/shared/models/credit';
+import { getUserCreditsSummary } from '@/shared/models/credit';
 import { getUserInfo } from '@/shared/models/user';
 
 export async function POST(req: Request) {
@@ -9,9 +9,9 @@ export async function POST(req: Request) {
       return respErr('no auth, please sign in');
     }
 
-    const credits = await getRemainingCredits(user.id);
+    const creditsSummary = await getUserCreditsSummary(user.id);
 
-    return respData({ remainingCredits: credits });
+    return respData(creditsSummary);
   } catch (e) {
     console.log('get user credits failed:', e);
     return respErr('get user credits failed');

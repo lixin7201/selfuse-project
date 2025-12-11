@@ -8,7 +8,14 @@
     "remaining_credits": "剩余积分",
     "created_at": "创建时间",
     "actions": "操作",
-    "roles": "角色"
+    "roles": "角色",
+    "unlimited_credits": "无限积分",
+    "unlimited_credits_desc": "开启后该用户消耗积分为0",
+    "target_credits": "目标积分",
+    "target_credits_desc": "设定新的剩余积分",
+    "expires_at": "到期时间",
+    "expires_at_desc": "积分到期时间，留空则不过期",
+    "note": "备注"
   },
   "list": {
     "title": "用户",
@@ -21,7 +28,8 @@
       "edit": "编辑用户",
       "view": "查看用户",
       "delete": "删除用户",
-      "edit_roles": "编辑角色"
+      "edit_roles": "编辑角色",
+      "edit_credits": "调整积分"
     },
     "search": {
       "email": {
@@ -47,6 +55,17 @@
       "admin": "管理后台",
       "users": "用户",
       "edit_roles": "编辑角色"
+    },
+    "buttons": {
+      "submit": "更新"
+    }
+  },
+  "edit_credits": {
+    "title": "调整积分",
+    "crumbs": {
+      "admin": "管理后台",
+      "users": "用户",
+      "edit_credits": "调整积分"
     },
     "buttons": {
       "submit": "更新"

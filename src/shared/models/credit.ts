@@ -5,7 +5,8 @@ import { credit } from '@/config/db/schema';
 import { getSnowId, getUuid } from '@/shared/lib/hash';
 
 import { getAllConfigs } from './config';
-import { appendUserToResult, User } from './user';
+import { appendUserToResult, User, findUserById } from './user';
+
 
 export type Credit = typeof credit.$inferSelect & {
   user?: User;
@@ -62,6 +63,45 @@ export function calculateCreditExpirationTime({
 
   return expiresAt;
 }
+
+// Get user credits summary
+export async function getUserCreditsSummary(userId: string) {
+  const user = await findUserById(userId);
+  const isUnlimited = user?.unlimitedCredits || false;
+  
+  if (isUnlimited) {
+    return {
+      remainingCredits: Number.MAX_SAFE_INTEGER,
+      expiresAt: null,
+      isUnlimited: true
+    };
+  }
+
+  const remainingCredits = await getRemainingCredits(userId);
+  
+  // Get next expiration time
+  const [nextExpiring] = await db()
+    .select({ expiresAt: credit.expiresAt })
+    .from(credit)
+    .where(
+      and(
+        eq(credit.userId, userId),
+        eq(credit.transactionType, CreditTransactionType.GRANT),
+        eq(credit.status, CreditStatus.ACTIVE),
+        gt(credit.remainingCredits, 0),
+        gt(credit.expiresAt, new Date())
+      )
+    )
+    .orderBy(asc(credit.expiresAt))
+    .limit(1);
+
+  return {
+    remainingCredits,
+    expiresAt: nextExpiring?.expiresAt || null,
+    isUnlimited: false
+  };
+}
+
 
 // Helper function to create expiration condition for queries
 export function createExpirationCondition() {
@@ -149,6 +189,7 @@ export async function consumeCredits({
   description,
   metadata,
   tx,
+  skipDeduct,
 }: {
   userId: string;
   credits: number; // credits to consume
@@ -156,12 +197,32 @@ export async function consumeCredits({
   description?: string;
   metadata?: string;
   tx?: any;
+  skipDeduct?: boolean;
 }) {
   const currentTime = new Date();
 
   // consume credits
   const execute = async (tx: any) => {
+    if (skipDeduct) {
+       // Just record the consumption without deducting
+       const consumedCredit: NewCredit = {
+        id: getUuid(),
+        transactionNo: getSnowId(),
+        transactionType: CreditTransactionType.CONSUME,
+        transactionScene: scene,
+        userId: userId,
+        status: CreditStatus.ACTIVE,
+        description: description || 'unlimited usage',
+        credits: 0, // No actual deduction
+        consumedDetail: JSON.stringify({ note: 'skipped deduction (unlimited)' }),
+        metadata: metadata,
+      };
+      await tx.insert(credit).values(consumedCredit);
+      return consumedCredit;
+    }
+
     // 1. check credits balance
+
     const [creditsBalance] = await tx
       .select({
         total: sum(credit.remainingCredits),
@@ -365,3 +426,70 @@ export async function grantCreditsForNewUser(user: User) {
 
   return newCredit;
 }
+
+// set user credits (admin)
+export async function setUserCredits({
+  userId,
+  targetCredits,
+  expiresAt,
+  scene,
+  note,
+}: {
+  userId: string;
+  targetCredits: number;
+  expiresAt?: Date | null;
+  scene?: string;
+  note?: string;
+}) {
+  return await db().transaction(async (tx) => {
+    // 1. Check if we need to reset existing credits
+    const currentTime = new Date();
+    const [creditsBalance] = await tx
+      .select({
+        total: sum(credit.remainingCredits),
+      })
+      .from(credit)
+      .where(
+        and(
+          eq(credit.userId, userId),
+          eq(credit.transactionType, CreditTransactionType.GRANT),
+          eq(credit.status, CreditStatus.ACTIVE),
+          gt(credit.remainingCredits, 0),
+          or(
+            isNull(credit.expiresAt),
+            gt(credit.expiresAt, currentTime)
+          )
+        )
+      );
+
+    const remaining = parseInt(creditsBalance?.total || '0');
+
+    if (remaining > 0) {
+      await consumeCredits({
+        userId,
+        credits: remaining,
+        scene: 'admin_adjust',
+        description: note ? `reset: ${note}` : 'reset for admin set',
+        tx,
+      });
+    }
+
+    // 2. Grant new credits if target > 0
+    if (targetCredits > 0) {
+      const newCredit: NewCredit = {
+        id: getUuid(),
+        userId,
+        transactionNo: getSnowId(),
+        transactionType: CreditTransactionType.GRANT,
+        transactionScene: scene || CreditTransactionScene.REWARD,
+        credits: targetCredits,
+        remainingCredits: targetCredits,
+        description: note || 'admin set',
+        expiresAt: expiresAt || null, // null means never expires
+        status: CreditStatus.ACTIVE,
+      };
+      await tx.insert(credit).values(newCredit);
+    }
+  });
+}
+

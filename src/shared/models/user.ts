@@ -11,6 +11,7 @@ import { getRemainingCredits } from './credit';
 export interface UserCredits {
   remainingCredits: number;
   expiresAt: Date | null;
+  isUnlimited?: boolean;
 }
 
 export type User = typeof user.$inferSelect & {

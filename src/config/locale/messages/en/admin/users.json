@@ -5,10 +5,17 @@
     "avatar": "Avatar",
     "email": "Email",
     "email_verified": "Email Verified",
-    "remaining_credits": "Remaining Credits",
+    "remaining_credits": "Credits",
     "created_at": "Created At",
     "actions": "Actions",
-    "roles": "Roles"
+    "roles": "Roles",
+    "unlimited_credits": "Unlimited Credits",
+    "unlimited_credits_desc": "User will have unlimited credits if enabled",
+    "target_credits": "Target Credits",
+    "target_credits_desc": "Set new remaining credits balance",
+    "expires_at": "Expires At",
+    "expires_at_desc": "Expiration date, leave empty for never expires",
+    "note": "Note"
   },
   "list": {
     "title": "Users",
@@ -21,7 +28,8 @@
       "edit": "Edit User",
       "view": "View User",
       "delete": "Delete User",
-      "edit_roles": "Edit Roles"
+      "edit_roles": "Edit Roles",
+      "edit_credits": "Adjust Credits"
     },
     "search": {
       "email": {
@@ -35,7 +43,7 @@
     "crumbs": {
       "admin": "Admin",
       "users": "Users",
-      "edit": "Edit"
+      "edit": "Edit User"
     },
     "buttons": {
       "submit": "Update"
@@ -47,6 +55,17 @@
       "admin": "Admin",
       "users": "Users",
       "edit_roles": "Edit Roles"
+    },
+    "buttons": {
+      "submit": "Update"
+    }
+  },
+  "edit_credits": {
+    "title": "Adjust Credits",
+    "crumbs": {
+      "admin": "Admin",
+      "users": "Users",
+      "edit_credits": "Adjust Credits"
     },
     "buttons": {
       "submit": "Update"
