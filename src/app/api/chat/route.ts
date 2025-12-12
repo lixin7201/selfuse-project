@@ -111,23 +111,30 @@ export async function POST(req: Request) {
     let llmModel;
 
     if (provider === 'evolink') {
-      // Use Evolink provider with Anthropic SDK (Claude models use Anthropic Messages API)
-      // @docs https://docs.evolink.ai/en/api-manual/language-series/claude/claude-messages-api
       const evolinkApiKey = configs.evolink_api_key;
       if (!evolinkApiKey) {
         throw new Error('evolink_api_key is not set');
       }
 
-      // Evolink Claude API endpoint: https://api.evolink.ai/v1/messages
       const evolinkBaseUrl = configs.evolink_base_url || 'https://api.evolink.ai';
 
-      // Create Anthropic-compatible client for Evolink Claude models
-      const evolink = createAnthropic({
-        apiKey: evolinkApiKey,
-        baseURL: `${evolinkBaseUrl}/v1`,
-      });
-
-      llmModel = evolink.chat(model);
+      // Gemini models use OpenAI-compatible API
+      // @docs https://docs.evolink.ai/en/api-manual/language-series/gemini-3.0-pro/openai-sdk/openai-sdk-quickstart
+      if (model.startsWith('gemini-')) {
+        const evolink = createOpenRouter({
+          apiKey: evolinkApiKey,
+          baseURL: `${evolinkBaseUrl}/v1`,
+        });
+        llmModel = evolink.chat(model);
+      } else {
+        // Claude models use Anthropic Messages API
+        // @docs https://docs.evolink.ai/en/api-manual/language-series/claude/claude-messages-api
+        const evolink = createAnthropic({
+          apiKey: evolinkApiKey,
+          baseURL: `${evolinkBaseUrl}/v1`,
+        });
+        llmModel = evolink.chat(model);
+      }
     } else {
       // Default to OpenRouter
       const openrouterApiKey = configs.openrouter_api_key;

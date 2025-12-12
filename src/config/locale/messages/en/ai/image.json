@@ -24,7 +24,11 @@
       "reference_image": "Reference Image",
       "reference_image_placeholder": "Upload reference images, support multiple images",
       "some_images_failed_to_upload": "Some images failed to upload, please delete them and re-upload",
-      "prompt_too_long": "Prompt is too long, please delete some content"
+      "prompt_too_long": "Prompt is too long, please delete some content",
+      "aspect_ratio": "Aspect Ratio",
+      "select_aspect_ratio": "Select aspect ratio",
+      "resolution": "Resolution",
+      "select_resolution": "Select resolution"
     },
     "generate": "Generate Images",
     "checking_account": "Checking Account...",

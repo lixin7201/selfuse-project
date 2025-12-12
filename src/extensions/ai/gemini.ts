@@ -85,7 +85,16 @@ export class GeminiProvider implements AIProvider {
       }
     }
 
-    const { image_input, ...generationConfig } = options || {};
+    const { image_input, aspect_ratio, image_size, ...generationConfig } = options || {};
+
+    // Build image_config for Gemini 3 Pro Image Preview
+    const imageConfig: any = {};
+    if (aspect_ratio) {
+      imageConfig.aspect_ratio = aspect_ratio;
+    }
+    if (image_size && model === 'gemini-3-pro-image-preview') {
+      imageConfig.image_size = image_size;
+    }
 
     const payload = {
       contents: {
@@ -94,6 +103,7 @@ export class GeminiProvider implements AIProvider {
       },
       generation_config: {
         response_modalities: ['TEXT', 'IMAGE'],
+        ...(Object.keys(imageConfig).length > 0 && { image_config: imageConfig }),
         ...generationConfig,
       },
     };

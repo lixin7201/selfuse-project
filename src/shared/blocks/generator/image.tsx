@@ -19,6 +19,11 @@ import {
   ImageUploaderValue,
   LazyImage,
 } from '@/shared/blocks/common';
+import {
+  ImageOptionsSelector,
+  supportsAspectRatio,
+  supportsResolution,
+} from '@/shared/blocks/generator/components';
 import { Button } from '@/shared/components/ui/button';
 import {
   Card,
@@ -260,6 +265,8 @@ export function ImageGenerator({
     null
   );
   const [isMounted, setIsMounted] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<string>('1:1');
+  const [resolution, setResolution] = useState<string>('1K');
 
   const { user, isCheckSign, setIsShowSignModal, fetchUserCredits } =
     useAppContext();
@@ -538,6 +545,16 @@ export function ImageGenerator({
         options.image_input = referenceImageUrls;
       }
 
+      // Add aspect ratio if supported
+      if (supportsAspectRatio(provider, model) && aspectRatio) {
+        options.aspect_ratio = aspectRatio;
+      }
+
+      // Add resolution if supported (Gemini 3 Pro only)
+      if (supportsResolution(provider, model) && resolution) {
+        options.image_size = resolution;
+      }
+
       const resp = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: {
@@ -697,6 +714,15 @@ export function ImageGenerator({
                     </Select>
                   </div>
                 </div>
+
+                <ImageOptionsSelector
+                  provider={provider}
+                  model={model}
+                  aspectRatio={aspectRatio}
+                  onAspectRatioChange={setAspectRatio}
+                  resolution={resolution}
+                  onResolutionChange={setResolution}
+                />
 
                 {!isTextToImageMode && (
                   <div className="space-y-4">

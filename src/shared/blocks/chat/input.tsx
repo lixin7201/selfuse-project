@@ -97,6 +97,12 @@ export function ChatInput({
       name: 'claude-opus-4-1-20250805',
       provider: 'evolink',
     },
+    // Gemini via Evolink - uses OpenAI-compatible API
+    {
+      title: 'Gemini 3.0 Pro (Evolink)',
+      name: 'gemini-3-pro-preview',
+      provider: 'evolink',
+    },
   ];
 
   const [model, setModel] = useState<string>(models[0].name);

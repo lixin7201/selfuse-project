@@ -324,9 +324,12 @@ export class EvolinkProvider implements AIProvider {
 
     // handle image generation options
     if (mediaType === AIMediaType.IMAGE) {
-      // size parameter (e.g., "1:1", "16:9", "1024x768")
+      // size parameter (e.g., \"1:1\", \"16:9\", \"1024x768\")
+      // Also accept aspect_ratio as an alias for size (for compatibility with frontend)
       if (options.size) {
         input.size = options.size;
+      } else if (options.aspect_ratio) {
+        input.size = options.aspect_ratio;
       }
       // seed for reproducibility
       if (options.seed) {
