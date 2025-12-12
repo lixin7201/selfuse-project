@@ -114,6 +114,37 @@ const MODEL_OPTIONS = [
     provider: 'kie',
     scenes: ['text-to-video'],
   },
+  // Evolink models - IDs from https://docs.evolink.ai/cn/api-manual/
+  {
+    value: 'veo3.1-fast',
+    label: 'Veo 3.1 Fast (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-video', 'image-to-video'],
+  },
+  {
+    value: 'sora-2',
+    label: 'Sora 2 (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-video', 'image-to-video'],
+  },
+  {
+    value: 'doubao-seedance-1.0-pro-fast',
+    label: 'Seedance 1.0 Pro Fast (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-video', 'image-to-video'],
+  },
+  {
+    value: 'kling-o1-image-to-video',
+    label: 'Kling O1 I2V (Evolink)',
+    provider: 'evolink',
+    scenes: ['image-to-video'],
+  },
+  {
+    value: 'kling-o1-text-to-video',
+    label: 'Kling O1 T2V (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-video'],
+  },
 ];
 
 const PROVIDER_OPTIONS = [
@@ -128,6 +159,10 @@ const PROVIDER_OPTIONS = [
   {
     value: 'kie',
     label: 'Kie',
+  },
+  {
+    value: 'evolink',
+    label: 'Evolink',
   },
 ];
 

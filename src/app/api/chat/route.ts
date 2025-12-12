@@ -1,16 +1,12 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import {
   convertToModelMessages,
   createIdGenerator,
   generateId,
-  stepCountIs,
   streamText,
-  TextUIPart,
-  tool,
   UIMessage,
-  validateUIMessages,
 } from 'ai';
-import { z } from 'zod';
 
 import { findChatById } from '@/shared/models/chat';
 import {
@@ -28,12 +24,14 @@ export async function POST(req: Request) {
       chatId,
       message,
       model,
+      provider: requestProvider,
       webSearch,
       reasoning,
     }: {
       chatId: string;
       message: UIMessage;
       model: string;
+      provider?: string;
       webSearch: boolean;
       reasoning?: boolean;
     } = await req.json();
@@ -63,22 +61,18 @@ export async function POST(req: Request) {
     }
 
     const configs = await getAllConfigs();
-    const openrouterApiKey = configs.openrouter_api_key;
-    if (!openrouterApiKey) {
-      throw new Error('openrouter_api_key is not set');
-    }
 
-    const openrouterBaseUrl = configs.openrouter_base_url;
+    // Determine provider (default to openrouter)
+    const provider = requestProvider || 'openrouter';
 
     const currentTime = new Date();
 
     const metadata = {
       model,
+      provider,
       webSearch,
       reasoning,
     };
-
-    const provider = 'openrouter';
 
     // save user message to database
     const userMessage: NewChatMessage = {
@@ -95,11 +89,6 @@ export async function POST(req: Request) {
       provider: provider,
     };
     await createChatMessage(userMessage);
-
-    const openrouter = createOpenRouter({
-      apiKey: openrouterApiKey,
-      baseURL: openrouterBaseUrl ? openrouterBaseUrl : undefined,
-    });
 
     // load previous messages from database
     const previousMessages = await getChatMessages({
@@ -118,8 +107,46 @@ export async function POST(req: Request) {
       })) as UIMessage[];
     }
 
+    // Create provider client based on selected provider
+    let llmModel;
+
+    if (provider === 'evolink') {
+      // Use Evolink provider with Anthropic SDK (Claude models use Anthropic Messages API)
+      // @docs https://docs.evolink.ai/en/api-manual/language-series/claude/claude-messages-api
+      const evolinkApiKey = configs.evolink_api_key;
+      if (!evolinkApiKey) {
+        throw new Error('evolink_api_key is not set');
+      }
+
+      // Evolink Claude API endpoint: https://api.evolink.ai/v1/messages
+      const evolinkBaseUrl = configs.evolink_base_url || 'https://api.evolink.ai';
+
+      // Create Anthropic-compatible client for Evolink Claude models
+      const evolink = createAnthropic({
+        apiKey: evolinkApiKey,
+        baseURL: `${evolinkBaseUrl}/v1`,
+      });
+
+      llmModel = evolink.chat(model);
+    } else {
+      // Default to OpenRouter
+      const openrouterApiKey = configs.openrouter_api_key;
+      if (!openrouterApiKey) {
+        throw new Error('openrouter_api_key is not set');
+      }
+
+      const openrouterBaseUrl = configs.openrouter_base_url;
+
+      const openrouter = createOpenRouter({
+        apiKey: openrouterApiKey,
+        baseURL: openrouterBaseUrl ? openrouterBaseUrl : undefined,
+      });
+
+      llmModel = openrouter.chat(model);
+    }
+
     const result = streamText({
-      model: openrouter.chat(model),
+      model: llmModel,
       messages: convertToModelMessages(validatedMessages),
     });
 

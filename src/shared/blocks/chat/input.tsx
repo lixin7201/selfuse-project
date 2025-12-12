@@ -55,21 +55,47 @@ export function ChatInput({
 
   // todo: get models from api
   const models: ChatModel[] = [
+    // OpenRouter models (default)
     {
       title: 'Kimi K2 Thinking',
       name: 'moonshotai/kimi-k2-thinking',
+      provider: 'openrouter',
     },
     {
       title: 'Deepseek R1',
       name: 'deepseek/deepseek-r1',
+      provider: 'openrouter',
     },
     {
       title: 'GPT-5',
       name: 'openai/gpt-5',
+      provider: 'openrouter',
     },
     {
       title: 'Claude 4.5 Sonnet',
       name: 'anthropic/claude-4.5-sonnet',
+      provider: 'openrouter',
+    },
+    // Evolink models - IDs from https://docs.evolink.ai/en/api-manual/language-series/claude/
+    {
+      title: 'Claude Sonnet 4.5 (Evolink)',
+      name: 'claude-sonnet-4-5-20250929',
+      provider: 'evolink',
+    },
+    {
+      title: 'Claude Haiku 4.5 (Evolink)',
+      name: 'claude-haiku-4-5-20251001',
+      provider: 'evolink',
+    },
+    {
+      title: 'Claude Opus 4.5 (Evolink)',
+      name: 'claude-opus-4-5-20251101',
+      provider: 'evolink',
+    },
+    {
+      title: 'Claude Opus 4.1 (Evolink)',
+      name: 'claude-opus-4-1-20250805',
+      provider: 'evolink',
     },
   ];
 
@@ -85,7 +111,9 @@ export function ChatInput({
       <PromptInput
         onSubmit={async (message) => {
           try {
-            handleSubmit(message, { model, webSearch, reasoning });
+            const selectedModel = models.find((item) => item.name === model);
+            const provider = selectedModel?.provider || 'openrouter';
+            handleSubmit(message, { model, provider, webSearch, reasoning });
             setInput('');
           } catch (err) {
             // Allow parent to control error display/state. Do not clear input.

@@ -127,6 +127,28 @@ const MODEL_OPTIONS = [
     provider: 'kie',
     scenes: ['text-to-image', 'image-to-image'],
   },
+  // Evolink models - IDs from https://docs.evolink.ai/cn/api-manual/
+  // Z Image Turbo - ultra-fast text-to-image
+  {
+    value: 'z-image-turbo',
+    label: 'Z Image Turbo (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-image'],
+  },
+  // Nano Banana Pro - official channel with better stability
+  {
+    value: 'gemini-3-pro-image-preview',
+    label: 'Nano Banana Pro (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-image', 'image-to-image'],
+  },
+  // Nano Banana Lite - cost-effective option
+  {
+    value: 'nano-banana-2-lite',
+    label: 'Nano Banana Lite (Evolink)',
+    provider: 'evolink',
+    scenes: ['text-to-image', 'image-to-image'],
+  },
 ];
 
 const PROVIDER_OPTIONS = [
@@ -145,6 +167,10 @@ const PROVIDER_OPTIONS = [
   {
     value: 'kie',
     label: 'Kie',
+  },
+  {
+    value: 'evolink',
+    label: 'Evolink',
   },
 ];
 
