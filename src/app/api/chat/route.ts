@@ -118,9 +118,10 @@ export async function POST(req: Request) {
 
       const evolinkBaseUrl = configs.evolink_base_url || 'https://api.evolink.ai';
 
-      // Gemini models use OpenAI-compatible API
+      // Gemini and GPT-5.x models use OpenAI-compatible API
       // @docs https://docs.evolink.ai/en/api-manual/language-series/gemini-3.0-pro/openai-sdk/openai-sdk-quickstart
-      if (model.startsWith('gemini-')) {
+      // @docs https://docs.evolink.ai/en/api-manual/language-series/gpt-5.2/gpt-5.2-reference
+      if (model.startsWith('gemini-') || model.startsWith('gpt-5.')) {
         const evolink = createOpenRouter({
           apiKey: evolinkApiKey,
           baseURL: `${evolinkBaseUrl}/v1`,

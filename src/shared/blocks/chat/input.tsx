@@ -103,6 +103,13 @@ export function ChatInput({
       name: 'gemini-3-pro-preview',
       provider: 'evolink',
     },
+    // GPT 5.2 via Evolink - uses OpenAI-compatible API
+    // @docs https://docs.evolink.ai/en/api-manual/language-series/gpt-5.2/gpt-5.2-reference
+    {
+      title: 'GPT 5.2 (Evolink)',
+      name: 'gpt-5.2',
+      provider: 'evolink',
+    },
   ];
 
   const [model, setModel] = useState<string>(models[0].name);
