@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UIMessage, UseChatHelpers } from '@ai-sdk/react';
 import { BrainCircuitIcon, GlobeIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -36,6 +36,8 @@ import {
 } from '@/shared/components/ui/tooltip';
 import { useChatContext } from '@/shared/contexts/chat';
 import { ChatModel } from '@/shared/types/chat';
+
+const CHAT_MODEL_STORAGE_KEY = 'shipany_chat_selected_model';
 
 export function ChatInput({
   handleSubmit,
@@ -76,7 +78,14 @@ export function ChatInput({
       name: 'anthropic/claude-4.5-sonnet',
       provider: 'openrouter',
     },
-    // Evolink models - IDs from https://docs.evolink.ai/en/api-manual/language-series/claude/
+    // Evolink models - IDs from https://docs.evolink.ai/en/api-manual/language-series/
+    // Kimi K2 via Evolink - uses OpenAI-compatible API
+    // @docs https://docs.evolink.ai/en/api-manual/language-series/kimi-k2/Kimi-K2-api
+    {
+      title: 'Kimi K2 Thinking (Evolink)',
+      name: 'kimi-k2-thinking',
+      provider: 'evolink',
+    },
     {
       title: 'Claude Sonnet 4.5 (Evolink)',
       name: 'claude-sonnet-4-5-20250929',
@@ -112,7 +121,24 @@ export function ChatInput({
     },
   ];
 
+  // Initialize with default, then load from localStorage in useEffect
   const [model, setModel] = useState<string>(models[0].name);
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+
+  // Load saved model from localStorage on mount
+  useEffect(() => {
+    const savedModel = localStorage.getItem(CHAT_MODEL_STORAGE_KEY);
+    if (savedModel && models.some((m) => m.name === savedModel)) {
+      setModel(savedModel);
+    }
+    setIsModelLoaded(true);
+  }, []);
+
+  // Save model to localStorage when changed
+  const handleModelChange = (value: string) => {
+    setModel(value);
+    localStorage.setItem(CHAT_MODEL_STORAGE_KEY, value);
+  };
   const [input, setInput] = useState('');
   const [webSearch, setWebSearch] = useState(false);
   const [reasoning, setReasoning] = useState(false);
@@ -189,7 +215,7 @@ export function ChatInput({
             </div>
             <PromptInputSelect
               onValueChange={(value) => {
-                setModel(value);
+                handleModelChange(value);
               }}
               value={model}
             >

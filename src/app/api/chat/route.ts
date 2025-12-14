@@ -91,21 +91,32 @@ export async function POST(req: Request) {
     await createChatMessage(userMessage);
 
     // load previous messages from database
+    // Note: getChatMessages returns messages in ASC order by createdAt
+    // We need the most recent messages, so we'll get more and include the current message
     const previousMessages = await getChatMessages({
       chatId,
       status: ChatMessageStatus.CREATED,
       page: 1,
-      limit: 10,
+      limit: 50, // Increased limit to ensure we get enough context
     });
 
+    // Debug logging - check what messages we're sending to LLM
+    console.log('[Chat API] Total messages from DB:', previousMessages.length);
+    console.log('[Chat API] Message IDs:', previousMessages.map(m => ({ id: m.id, role: m.role, createdAt: m.createdAt })));
+
+    // Convert database messages to UIMessage format
+    // Messages are already in chronological order (oldest first) from the query
     let validatedMessages: UIMessage[] = [];
     if (previousMessages.length > 0) {
-      validatedMessages = previousMessages.reverse().map((message) => ({
+      validatedMessages = previousMessages.map((message) => ({
         id: message.id,
         role: message.role,
         parts: message.parts ? JSON.parse(message.parts) : [],
       })) as UIMessage[];
     }
+
+    console.log('[Chat API] Validated messages count:', validatedMessages.length);
+    console.log('[Chat API] Last message role:', validatedMessages.length > 0 ? validatedMessages[validatedMessages.length - 1].role : 'none');
 
     // Create provider client based on selected provider
     let llmModel;
@@ -118,10 +129,15 @@ export async function POST(req: Request) {
 
       const evolinkBaseUrl = configs.evolink_base_url || 'https://api.evolink.ai';
 
-      // Gemini and GPT-5.x models use OpenAI-compatible API
+      // Debug logging
+      console.log('[Chat API] Evolink request:', { model, provider: requestProvider, evolinkBaseUrl });
+
+      // Gemini, GPT-5.x, and Kimi-K2 models use OpenAI-compatible API
       // @docs https://docs.evolink.ai/en/api-manual/language-series/gemini-3.0-pro/openai-sdk/openai-sdk-quickstart
       // @docs https://docs.evolink.ai/en/api-manual/language-series/gpt-5.2/gpt-5.2-reference
-      if (model.startsWith('gemini-') || model.startsWith('gpt-5.')) {
+      // @docs https://docs.evolink.ai/en/api-manual/language-series/kimi-k2/Kimi-K2-api
+      if (model.startsWith('gemini-') || model.startsWith('gpt-5.') || model.startsWith('kimi-k2')) {
+        console.log('[Chat API] Using OpenAI-compatible client for model:', model);
         const evolink = createOpenRouter({
           apiKey: evolinkApiKey,
           baseURL: `${evolinkBaseUrl}/v1`,
@@ -130,6 +146,7 @@ export async function POST(req: Request) {
       } else {
         // Claude models use Anthropic Messages API
         // @docs https://docs.evolink.ai/en/api-manual/language-series/claude/claude-messages-api
+        console.log('[Chat API] Using Anthropic client for model:', model);
         const evolink = createAnthropic({
           apiKey: evolinkApiKey,
           baseURL: `${evolinkBaseUrl}/v1`,

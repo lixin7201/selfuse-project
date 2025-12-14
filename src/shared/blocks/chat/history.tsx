@@ -3,8 +3,10 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { IconHistory } from '@tabler/icons-react';
+import { Trash2 } from 'lucide-react';
 import moment from 'moment';
 import { useLocale, useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 import { Link, usePathname, useRouter } from '@/core/i18n/navigation';
 import { LocaleSelector, Pagination } from '@/shared/blocks/common';
@@ -181,6 +183,48 @@ export function ChatHistory() {
     fetchChats();
   };
 
+  // Delete chat state and handler
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+
+  const handleDeleteChat = useCallback(
+    async (chatId: string) => {
+      setDeletingChatId(chatId);
+      try {
+        const resp = await fetch('/api/chat/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ chatId }),
+        });
+
+        if (!resp.ok) {
+          throw new Error(`request failed with status ${resp.status}`);
+        }
+
+        const json = (await resp.json()) as {
+          code: number;
+          message?: string;
+        };
+
+        if (json.code !== 0) {
+          throw new Error(json.message || 'unknown error');
+        }
+
+        toast.success(t('delete_success'));
+        // Remove deleted chat from the list
+        setChats((prev) => prev.filter((c) => c.id !== chatId));
+        setTotal((prev) => Math.max(0, prev - 1));
+      } catch (err) {
+        console.error('delete chat failed:', err);
+        toast.error(t('delete_error'));
+      } finally {
+        setDeletingChatId(null);
+      }
+    },
+    [t]
+  );
+
   const handleLimitSelect = (event: ChangeEvent<HTMLSelectElement>) => {
     const nextLimit = Number(event.target.value);
     if (!Number.isNaN(nextLimit)) {
@@ -258,7 +302,7 @@ export function ChatHistory() {
                       <span>{moment(chat.createdAt).fromNow()}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-start gap-2 text-left sm:items-end sm:text-right">
+                  <div className="flex flex-row items-center gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {chat.model && (
                         <Badge variant="outline" className="">
@@ -266,6 +310,23 @@ export function ChatHistory() {
                         </Badge>
                       )}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive h-8 w-8"
+                      disabled={deletingChatId === chat.id}
+                      onClick={() => {
+                        const confirmed = window.confirm(
+                          t('delete_confirm_description')
+                        );
+                        if (confirmed) {
+                          handleDeleteChat(chat.id);
+                        }
+                      }}
+                      title={t('delete')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>

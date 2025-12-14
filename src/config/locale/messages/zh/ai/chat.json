@@ -116,6 +116,13 @@
     "prev": "上一页",
     "next": "下一页",
     "open": "进入对话",
-    "untitled": "未命名对话"
+    "untitled": "未命名对话",
+    "delete": "删除",
+    "delete_confirm_title": "删除对话",
+    "delete_confirm_description": "确定要删除这个对话吗？此操作不可撤销。",
+    "delete_confirm": "删除",
+    "delete_cancel": "取消",
+    "delete_success": "对话已删除",
+    "delete_error": "删除对话失败"
   }
 }
