@@ -170,33 +170,65 @@ export function ChatInput({
                       // 将 URL 转换为 Blob
                       const response = await fetch(file.url);
                       const blob = await response.blob();
-                      
-                      // 创建 FormData 上传
-                      const formData = new FormData();
                       const fileName = file.filename || `file-${Date.now()}`;
-                      formData.append('files', blob, fileName);
                       
-                      // 上传到 R2 存储
-                      const uploadResp = await fetch('/api/storage/upload-file', {
-                        method: 'POST',
-                        body: formData,
-                      });
+                      // 判断是否为图片（需要上传到 R2）
+                      const isImage = blob.type.startsWith('image/');
                       
-                      if (!uploadResp.ok) {
-                        console.error('[ChatInput] Upload failed:', await uploadResp.text());
-                        return file; // 上传失败，返回原始文件
-                      }
-                      
-                      const { data } = await uploadResp.json();
-                      if (data?.results?.[0]) {
-                        const result = data.results[0];
-                        console.log('[ChatInput] File uploaded:', result);
+                      if (isImage) {
+                        // 图片使用 presigned URL 直接上传到 R2
+                        console.log('[ChatInput] Getting presigned URL for image:', fileName);
                         
-                        // 返回带有公开 URL 的文件对象
+                        // 1. 获取 presigned URL
+                        const presignedResp = await fetch('/api/storage/presigned-url', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            filename: fileName,
+                            contentType: blob.type,
+                          }),
+                        });
+                        
+                        if (!presignedResp.ok) {
+                          console.error('[ChatInput] Failed to get presigned URL');
+                          // 备选：返回 base64
+                          const reader = new FileReader();
+                          const base64 = await new Promise<string>((resolve) => {
+                            reader.onloadend = () => resolve(reader.result as string);
+                            reader.readAsDataURL(blob);
+                          });
+                          return { ...file, url: base64 };
+                        }
+                        
+                        const { data: presignedData } = await presignedResp.json();
+                        
+                        // 2. 直接上传到 R2
+                        console.log('[ChatInput] Uploading to R2 via presigned URL');
+                        const uploadResp = await fetch(presignedData.presignedUrl, {
+                          method: 'PUT',
+                          body: blob,
+                          headers: {
+                            'Content-Type': blob.type,
+                          },
+                        });
+                        
+                        if (uploadResp.ok) {
+                          console.log('[ChatInput] Image uploaded successfully:', presignedData.publicUrl);
+                          return {
+                            ...file,
+                            url: presignedData.publicUrl,
+                          };
+                        } else {
+                          console.error('[ChatInput] R2 upload failed:', uploadResp.status);
+                        }
+                      } else {
+                        // 非图片文件：读取内容作为文本
+                        console.log('[ChatInput] Reading text file:', fileName);
+                        const text = await blob.text();
                         return {
                           ...file,
-                          url: result.url || file.url,
-                          text: result.text, // 文本文件的内容
+                          // 保留 URL 以便显示，但添加文本内容
+                          text: `[文件: ${fileName}]\n\n${text}`,
                         };
                       }
                     } catch (e) {
