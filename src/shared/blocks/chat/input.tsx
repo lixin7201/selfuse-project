@@ -222,7 +222,7 @@ export function ChatInput({
         className="mt-4"
         globalDrop
         multiple
-        accept="image/*,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf"
+        accept="image/*,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf,.docx,.doc,.xlsx,.xls,.yaml,.yml,.sh,.log"
         maxFiles={5}
         maxFileSize={10 * 1024 * 1024}
       >
