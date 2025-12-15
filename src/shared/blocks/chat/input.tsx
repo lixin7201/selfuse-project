@@ -172,12 +172,23 @@ export function ChatInput({
                       const blob = await response.blob();
                       const fileName = file.filename || `file-${Date.now()}`;
                       
-                      // 判断是否为图片（需要上传到 R2）
+                      // 判断文件类型
                       const isImage = blob.type.startsWith('image/');
+                      const isPdf = blob.type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+                      const isTextFile = !isImage && !isPdf && (
+                        fileName.endsWith('.txt') || fileName.endsWith('.md') || 
+                        fileName.endsWith('.json') || fileName.endsWith('.csv') ||
+                        fileName.endsWith('.xml') || fileName.endsWith('.html') ||
+                        fileName.endsWith('.css') || fileName.endsWith('.js') ||
+                        fileName.endsWith('.ts') || fileName.endsWith('.py') ||
+                        fileName.endsWith('.yaml') || fileName.endsWith('.yml') ||
+                        fileName.endsWith('.sh') || fileName.endsWith('.log') ||
+                        blob.type.startsWith('text/')
+                      );
                       
-                      if (isImage) {
-                        // 图片使用 presigned URL 直接上传到 R2
-                        console.log('[ChatInput] Getting presigned URL for image:', fileName);
+                      if (isImage || isPdf) {
+                        // 图片和 PDF 使用 presigned URL 直接上传到 R2
+                        console.log('[ChatInput] Getting presigned URL for:', fileName, 'type:', blob.type);
                         
                         // 1. 获取 presigned URL
                         const presignedResp = await fetch('/api/storage/presigned-url', {
@@ -185,13 +196,21 @@ export function ChatInput({
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
                             filename: fileName,
-                            contentType: blob.type,
+                            contentType: blob.type || (isPdf ? 'application/pdf' : 'application/octet-stream'),
                           }),
                         });
                         
                         if (!presignedResp.ok) {
                           console.error('[ChatInput] Failed to get presigned URL');
-                          // 备选：返回 base64
+                          // 对于大文件，无法使用 base64 备选
+                          if (blob.size > 3 * 1024 * 1024) {
+                            console.error('[ChatInput] File too large for base64 fallback');
+                            return {
+                              ...file,
+                              text: `[文件上传失败: ${fileName}]\n\n文件太大，请使用较小的文件或联系管理员配置存储服务。`,
+                            };
+                          }
+                          // 备选：返回 base64（仅限小文件）
                           const reader = new FileReader();
                           const base64 = await new Promise<string>((resolve) => {
                             reader.onloadend = () => resolve(reader.result as string);
@@ -208,27 +227,43 @@ export function ChatInput({
                           method: 'PUT',
                           body: blob,
                           headers: {
-                            'Content-Type': blob.type,
+                            'Content-Type': blob.type || (isPdf ? 'application/pdf' : 'application/octet-stream'),
                           },
                         });
                         
                         if (uploadResp.ok) {
-                          console.log('[ChatInput] Image uploaded successfully:', presignedData.publicUrl);
+                          console.log('[ChatInput] File uploaded successfully:', presignedData.publicUrl);
                           return {
                             ...file,
                             url: presignedData.publicUrl,
                           };
                         } else {
                           console.error('[ChatInput] R2 upload failed:', uploadResp.status);
+                          return {
+                            ...file,
+                            text: `[文件上传失败: ${fileName}]\n\n请检查存储服务配置或稍后重试。`,
+                          };
                         }
-                      } else {
-                        // 非图片文件：读取内容作为文本
+                      } else if (isTextFile) {
+                        // 文本文件：读取内容（限制大小）
                         console.log('[ChatInput] Reading text file:', fileName);
+                        if (blob.size > 100 * 1024) { // 限制文本文件 100KB
+                          return {
+                            ...file,
+                            text: `[文件: ${fileName}]\n\n文件内容过大（${(blob.size / 1024).toFixed(1)}KB），仅显示前 100KB。\n\n${await blob.slice(0, 100 * 1024).text()}`,
+                          };
+                        }
                         const text = await blob.text();
                         return {
                           ...file,
-                          // 保留 URL 以便显示，但添加文本内容
                           text: `[文件: ${fileName}]\n\n${text}`,
+                        };
+                      } else {
+                        // 其他未知类型文件
+                        console.log('[ChatInput] Unknown file type:', fileName, blob.type);
+                        return {
+                          ...file,
+                          text: `[不支持的文件类型: ${fileName}]\n\n请上传图片、PDF 或文本文件。`,
                         };
                       }
                     } catch (e) {
