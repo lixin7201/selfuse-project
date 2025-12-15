@@ -1,5 +1,6 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import {
   convertToModelMessages,
   createIdGenerator,
@@ -117,6 +118,12 @@ export async function POST(req: Request) {
 
     console.log('[Chat API] Validated messages count:', validatedMessages.length);
     console.log('[Chat API] Last message role:', validatedMessages.length > 0 ? validatedMessages[validatedMessages.length - 1].role : 'none');
+    
+    // Debug: 检查最后一条消息的 parts 内容
+    if (validatedMessages.length > 0) {
+      const lastMsg = validatedMessages[validatedMessages.length - 1];
+      console.log('[Chat API] Last message parts:', JSON.stringify(lastMsg.parts, null, 2));
+    }
 
     // Create provider client based on selected provider
     let llmModel;
@@ -153,6 +160,18 @@ export async function POST(req: Request) {
         });
         llmModel = evolink.chat(model);
       }
+    } else if (provider === 'gemini') {
+      // Gemini 官方 API（复用 gemini_api_key 配置）
+      const geminiApiKey = configs.gemini_api_key;
+      if (!geminiApiKey) {
+        throw new Error('gemini_api_key is not set');
+      }
+
+      // 移除 -official 后缀以获取实际的 API 模型名
+      const actualModel = model.replace('-official', '');
+      console.log('[Chat API] Using Gemini official API for model:', actualModel);
+      const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
+      llmModel = google(actualModel);
     } else {
       // Default to OpenRouter
       const openrouterApiKey = configs.openrouter_api_key;

@@ -102,6 +102,18 @@ export function FollowUp({
           : body;
 
       try {
+        // Debug: 检查传递给 sendMessage 的内容
+        console.log('[FollowUp] Sending message with files:', {
+          text: message.text,
+          filesCount: message.files?.length,
+          files: message.files?.map(f => ({
+            type: f.type,
+            url: f.url?.substring(0, 100),
+            mediaType: f.mediaType,
+            filename: f.filename,
+          })),
+        });
+        
         await Promise.resolve(
           sendMessage(
             {

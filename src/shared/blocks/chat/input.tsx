@@ -119,6 +119,12 @@ export function ChatInput({
       name: 'gpt-5.2',
       provider: 'evolink',
     },
+    // Gemini 官方 API（复用现有 gemini_api_key 配置）
+    {
+      title: 'Gemini 3 Pro (Official)',
+      name: 'gemini-3-pro-preview-official',
+      provider: 'gemini',
+    },
   ];
 
   // Initialize with default, then load from localStorage in useEffect
@@ -152,21 +158,79 @@ export function ChatInput({
           try {
             const selectedModel = models.find((item) => item.name === model);
             const provider = selectedModel?.provider || 'openrouter';
-            handleSubmit(message, { model, provider, webSearch, reasoning });
+            
+            // 如果有文件附件，先上传到 R2 存储获取公开 URL
+            let processedFiles = message.files;
+            if (message.files && message.files.length > 0) {
+              processedFiles = await Promise.all(
+                message.files.map(async (file) => {
+                  // 如果是 blob 或 data URL，需要上传到 R2
+                  if (file.url && (file.url.startsWith('blob:') || file.url.startsWith('data:'))) {
+                    try {
+                      // 将 URL 转换为 Blob
+                      const response = await fetch(file.url);
+                      const blob = await response.blob();
+                      
+                      // 创建 FormData 上传
+                      const formData = new FormData();
+                      const fileName = file.filename || `file-${Date.now()}`;
+                      formData.append('files', blob, fileName);
+                      
+                      // 上传到 R2 存储
+                      const uploadResp = await fetch('/api/storage/upload-file', {
+                        method: 'POST',
+                        body: formData,
+                      });
+                      
+                      if (!uploadResp.ok) {
+                        console.error('[ChatInput] Upload failed:', await uploadResp.text());
+                        return file; // 上传失败，返回原始文件
+                      }
+                      
+                      const { data } = await uploadResp.json();
+                      if (data?.results?.[0]) {
+                        const result = data.results[0];
+                        console.log('[ChatInput] File uploaded:', result);
+                        
+                        // 返回带有公开 URL 的文件对象
+                        return {
+                          ...file,
+                          url: result.url || file.url,
+                          text: result.text, // 文本文件的内容
+                        };
+                      }
+                    } catch (e) {
+                      console.error('[ChatInput] Upload error:', e);
+                    }
+                  }
+                  return file;
+                })
+              );
+            }
+            
+            // 使用处理后的文件发送消息
+            handleSubmit(
+              { text: message.text, files: processedFiles },
+              { model, provider, webSearch, reasoning }
+            );
             setInput('');
           } catch (err) {
+            console.error('[ChatInput] Submit error:', err);
             // Allow parent to control error display/state. Do not clear input.
           }
         }}
         className="mt-4"
         globalDrop
         multiple
+        accept="image/*,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf"
+        maxFiles={5}
+        maxFileSize={10 * 1024 * 1024}
       >
-        {/* <PromptInputHeader>
-        <PromptInputAttachments>
-          {(attachment) => <PromptInputAttachment data={attachment} />}
-        </PromptInputAttachments>
-      </PromptInputHeader> */}
+        <PromptInputHeader>
+          <PromptInputAttachments>
+            {(attachment) => <PromptInputAttachment data={attachment} />}
+          </PromptInputAttachments>
+        </PromptInputHeader>
         <PromptInputBody>
           <PromptInputTextarea
             className="overflow-hidden p-4 ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -181,19 +245,12 @@ export function ChatInput({
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
-            {/* <PromptInputActionMenu>
-            <PromptInputActionMenuTrigger />
-            <PromptInputActionMenuContent>
-              <PromptInputActionAddAttachments />
-            </PromptInputActionMenuContent>
-          </PromptInputActionMenu>
-          <PromptInputButton
-            variant={webSearch ? 'default' : 'ghost'}
-            onClick={() => setWebSearch(!webSearch)}
-          >
-            <GlobeIcon size={16} />
-            <span>Search</span>
-          </PromptInputButton> */}
+            <PromptInputActionMenu>
+              <PromptInputActionMenuTrigger />
+              <PromptInputActionMenuContent>
+                <PromptInputActionAddAttachments label={t('add_attachments')} />
+              </PromptInputActionMenuContent>
+            </PromptInputActionMenu>
             <div className="flex items-center">
               <Switch
                 id="prompt-reasoning-switch"

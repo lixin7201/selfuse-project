@@ -482,11 +482,33 @@ export const PromptInput = ({
       if (!accept || accept.trim() === "") {
         return true;
       }
-      if (accept.includes("image/*")) {
-        return f.type.startsWith("image/");
+      
+      // 解析 accept 字符串为类型列表
+      const acceptTypes = accept.split(",").map((t) => t.trim().toLowerCase());
+      
+      // 检查文件是否匹配任何一个接受的类型
+      for (const acceptType of acceptTypes) {
+        // 检查通配符类型，如 "image/*"
+        if (acceptType.endsWith("/*")) {
+          const prefix = acceptType.slice(0, -2);
+          if (f.type.toLowerCase().startsWith(prefix + "/")) {
+            return true;
+          }
+        }
+        // 检查文件扩展名，如 ".txt", ".pdf"
+        else if (acceptType.startsWith(".")) {
+          const ext = "." + (f.name.split(".").pop()?.toLowerCase() || "");
+          if (ext === acceptType) {
+            return true;
+          }
+        }
+        // 检查完整 MIME 类型，如 "application/pdf"
+        else if (f.type.toLowerCase() === acceptType) {
+          return true;
+        }
       }
-      // NOTE: keep simple; expand as needed
-      return true;
+      
+      return false;
     },
     [accept]
   );
