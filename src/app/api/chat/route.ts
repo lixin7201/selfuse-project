@@ -192,6 +192,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: llmModel,
       messages: convertToModelMessages(validatedMessages),
+      maxOutputTokens: 8192, // 增加最大输出 token 数，防止回复被截断
     });
 
     // send sources and reasoning back to the client

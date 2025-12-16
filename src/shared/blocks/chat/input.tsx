@@ -276,7 +276,7 @@ export function ChatInput({
             }
             
             // 使用处理后的文件发送消息
-            handleSubmit(
+            await handleSubmit(
               { text: message.text, files: processedFiles },
               { model, provider, webSearch, reasoning }
             );
