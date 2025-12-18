@@ -198,10 +198,17 @@ export async function POST(req: Request) {
       messages: convertToModelMessages(validatedMessages),
     };
 
-    // Add maxOutputTokens for most models, but skip for Evolink GPT-5.x models
-    // GPT-5.x requires 'max_completion_tokens' instead of 'max_tokens'
+    // Add maxOutputTokens for most models
+    // GPT-5.x requires 'max_completion_tokens' instead of 'max_tokens', so we use providerOptions
     // @docs https://docs.evolink.ai/en/api-manual/language-series/gpt-5.2/gpt-5.2-reference
-    if (!(provider === 'evolink' && model.startsWith('gpt-5.'))) {
+    if (provider === 'evolink' && model.startsWith('gpt-5.')) {
+      // For Evolink GPT-5.x, use providerOptions to pass max_completion_tokens
+      streamOptions.providerOptions = {
+        openai: {
+          max_completion_tokens: 16384, // GPT-5.2 supports up to 32K output tokens
+        },
+      };
+    } else {
       streamOptions.maxOutputTokens = 8192; // 增加最大输出 token 数，防止回复被截断
     }
 
