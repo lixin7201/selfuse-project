@@ -196,8 +196,14 @@ export async function POST(req: Request) {
     const streamOptions: any = {
       model: llmModel,
       messages: convertToModelMessages(validatedMessages),
-      maxOutputTokens: 8192, // 增加最大输出 token 数，防止回复被截断
     };
+
+    // Add maxOutputTokens for most models, but skip for Evolink GPT-5.x models
+    // GPT-5.x requires 'max_completion_tokens' instead of 'max_tokens'
+    // @docs https://docs.evolink.ai/en/api-manual/language-series/gpt-5.2/gpt-5.2-reference
+    if (!(provider === 'evolink' && model.startsWith('gpt-5.'))) {
+      streamOptions.maxOutputTokens = 8192; // 增加最大输出 token 数，防止回复被截断
+    }
 
     // Add thinkingConfig for Gemini 3 models to improve response speed
     // Use 'low' thinkingLevel for faster responses (default is 'high' which is slower)
