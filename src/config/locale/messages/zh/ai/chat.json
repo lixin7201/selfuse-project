@@ -104,6 +104,13 @@
     "title": "今天有什么可以帮到你？",
     "input_placeholder": "你可以问我任何问题",
     "add_attachments": "添加图片或文件",
+    "thinking_level": "思考级别",
+    "thinking_levels": {
+      "minimal": "极简",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
     "file_too_large": "文件过大（最大 {size}MB）",
     "file_type_not_supported": "不支持的文件类型",
     "max_files_exceeded": "最多允许 {count} 个文件"

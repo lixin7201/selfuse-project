@@ -127,6 +127,12 @@ const MODEL_OPTIONS = [
     scenes: ['text-to-image', 'image-to-image'],
   },
   {
+    value: 'gemini-3-flash-preview',
+    label: 'Gemini 3 Flash Image Preview',
+    provider: 'gemini',
+    scenes: ['text-to-image', 'image-to-image'],
+  },
+  {
     value: 'nano-banana-pro',
     label: 'Nano Banana Pro',
     provider: 'kie',

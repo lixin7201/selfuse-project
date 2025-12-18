@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       provider: requestProvider,
       webSearch,
       reasoning,
+      thinkingLevel,
     }: {
       chatId: string;
       message: UIMessage;
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
       provider?: string;
       webSearch: boolean;
       reasoning?: boolean;
+      thinkingLevel?: 'minimal' | 'low' | 'medium' | 'high';
     } = await req.json();
 
     if (!chatId || !model) {
@@ -73,6 +75,7 @@ export async function POST(req: Request) {
       provider,
       webSearch,
       reasoning,
+      thinkingLevel,
     };
 
     // save user message to database
@@ -169,7 +172,7 @@ export async function POST(req: Request) {
 
       // 移除 -official 后缀以获取实际的 API 模型名
       const actualModel = model.replace('-official', '');
-      console.log('[Chat API] Using Gemini official API for model:', actualModel);
+      console.log('[Chat API] Using Gemini official API for model:', actualModel, 'thinkingLevel:', thinkingLevel);
       const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
       llmModel = google(actualModel);
     } else {
@@ -189,11 +192,27 @@ export async function POST(req: Request) {
       llmModel = openrouter.chat(model);
     }
 
-    const result = streamText({
+    // Build streamText options
+    const streamOptions: any = {
       model: llmModel,
       messages: convertToModelMessages(validatedMessages),
       maxOutputTokens: 8192, // 增加最大输出 token 数，防止回复被截断
-    });
+    };
+
+    // Add thinkingConfig for Gemini 3 models to improve response speed
+    // Use 'low' thinkingLevel for faster responses (default is 'high' which is slower)
+    // @docs https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai#thinking
+    if (provider === 'gemini' && model.includes('gemini-3')) {
+      streamOptions.providerOptions = {
+        google: {
+          thinkingConfig: {
+            thinkingLevel: thinkingLevel || 'low', // Default to 'low' for faster responses
+          },
+        },
+      };
+    }
+
+    const result = streamText(streamOptions);
 
     // send sources and reasoning back to the client
     return result.toUIMessageStreamResponse({

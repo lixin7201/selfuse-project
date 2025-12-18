@@ -35,6 +35,7 @@ export const RESOLUTION_OPTIONS = [
 export const ASPECT_RATIO_SUPPORTED_MODELS = [
   // Gemini
   'gemini-3-pro-image-preview',
+  'gemini-3-flash-preview',
   // Evolink
   'gemini-3-pro-image-preview', // Nano Banana Pro on Evolink
   'nano-banana-2-lite',
@@ -44,11 +45,12 @@ export const ASPECT_RATIO_SUPPORTED_MODELS = [
 // Models that support resolution selection
 export const RESOLUTION_SUPPORTED_MODELS = [
   'gemini-3-pro-image-preview',
+  'gemini-3-flash-preview',
 ];
 
 // Provider-model combinations for aspect ratio support
 export const supportsAspectRatio = (provider: string, model: string): boolean => {
-  if (provider === 'gemini' && model === 'gemini-3-pro-image-preview') {
+  if (provider === 'gemini' && (model === 'gemini-3-pro-image-preview' || model === 'gemini-3-flash-preview')) {
     return true;
   }
   if (provider === 'evolink' && ASPECT_RATIO_SUPPORTED_MODELS.includes(model)) {
@@ -59,7 +61,7 @@ export const supportsAspectRatio = (provider: string, model: string): boolean =>
 
 // Provider-model combinations for resolution support
 export const supportsResolution = (provider: string, model: string): boolean => {
-  if (provider === 'gemini' && model === 'gemini-3-pro-image-preview') {
+  if (provider === 'gemini' && (model === 'gemini-3-pro-image-preview' || model === 'gemini-3-flash-preview')) {
     return true;
   }
   // Evolink doesn't support resolution for Nano Banana models

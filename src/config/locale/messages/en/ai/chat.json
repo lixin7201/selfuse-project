@@ -104,6 +104,13 @@
     "title": "What can I help you today?",
     "input_placeholder": "You can ask me anything",
     "add_attachments": "Add photos or files",
+    "thinking_level": "Thinking Level",
+    "thinking_levels": {
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
     "file_too_large": "File is too large (max {size}MB)",
     "file_type_not_supported": "File type not supported",
     "max_files_exceeded": "Maximum {count} files allowed"

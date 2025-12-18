@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { UIMessage, UseChatHelpers } from '@ai-sdk/react';
-import { BrainCircuitIcon, GlobeIcon } from 'lucide-react';
+import { BrainCircuitIcon, ChevronDownIcon, GlobeIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -125,6 +125,18 @@ export function ChatInput({
       name: 'gemini-3-pro-preview-official',
       provider: 'gemini',
     },
+    {
+      title: 'Gemini 3 Flash (Official)',
+      name: 'gemini-3-flash-preview-official',
+      provider: 'gemini',
+    },
+  ];
+
+  // Thinking level options for Gemini 3 models (only 'low' and 'high' are supported)
+  // 'low' = faster responses, 'high' = deeper reasoning
+  const THINKING_LEVEL_OPTIONS = [
+    { value: 'low', labelKey: 'thinking_levels.low' },
+    { value: 'high', labelKey: 'thinking_levels.high' },
   ];
 
   // Initialize with default, then load from localStorage in useEffect
@@ -148,8 +160,12 @@ export function ChatInput({
   const [input, setInput] = useState('');
   const [webSearch, setWebSearch] = useState(false);
   const [reasoning, setReasoning] = useState(false);
+  const [thinkingLevel, setThinkingLevel] = useState<string>('low'); // Default to 'low' for faster responses
   const selectedModelLabel =
     models.find((item) => item.name === model)?.title ?? models[0]?.title ?? '';
+  
+  // Check if current model is Gemini 3 (supports thinking level)
+  const isGemini3Model = model.includes('gemini-3') && model.includes('-official');
 
   return (
     <div className="w-full">
@@ -278,7 +294,7 @@ export function ChatInput({
             // 使用处理后的文件发送消息
             await handleSubmit(
               { text: message.text, files: processedFiles },
-              { model, provider, webSearch, reasoning }
+              { model, provider, webSearch, reasoning, thinkingLevel: isGemini3Model ? thinkingLevel : undefined }
             );
             setInput('');
           } catch (err) {
@@ -356,6 +372,25 @@ export function ChatInput({
                 ))}
               </PromptInputSelectContent>
             </PromptInputSelect>
+            {isGemini3Model && (
+              <PromptInputSelect
+                onValueChange={setThinkingLevel}
+                value={thinkingLevel}
+              >
+                <PromptInputSelectTrigger className="w-auto min-w-[80px]">
+                  <PromptInputSelectValue>
+                    {t(THINKING_LEVEL_OPTIONS.find(opt => opt.value === thinkingLevel)?.labelKey || 'thinking_levels.low')}
+                  </PromptInputSelectValue>
+                </PromptInputSelectTrigger>
+                <PromptInputSelectContent>
+                  {THINKING_LEVEL_OPTIONS.map((option) => (
+                    <PromptInputSelectItem key={option.value} value={option.value}>
+                      {t(option.labelKey)}
+                    </PromptInputSelectItem>
+                  ))}
+                </PromptInputSelectContent>
+              </PromptInputSelect>
+            )}
           </PromptInputTools>
           <PromptInputSubmit
             disabled={!input || status === 'submitted'}
